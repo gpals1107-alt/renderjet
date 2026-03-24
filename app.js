@@ -36,6 +36,27 @@ document.addEventListener("DOMContentLoaded", () => {
     let ffmpegLoaded = false;
     let finalVideoBlob = null;
 
+    // 🌟 구글 API 클라우드 연동 전용 변수
+    const GOOGLE_CLIENT_ID = "608987722714-o9uv40f4079sfar49m0m4n59ch81ks66.apps.googleusercontent.com";
+    let tokenClient;
+    let uploadAccessToken = null;
+
+    // 구글 클라이언트 초기화(엔진 시동 시 함께 켜짐)
+    function initGoogleClient() {
+        if (window.google) {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: 'https://www.googleapis.com/auth/drive.file',
+                callback: (tokenResponse) => {
+                    if (tokenResponse && tokenResponse.access_token) {
+                        uploadAccessToken = tokenResponse.access_token;
+                        executeDriveUpload();
+                    }
+                }
+            });
+        }
+    }
+
     const i18n = {
         ko: {
             "slogan": "PRO VIDEO COMPRESSION ENGINE",
@@ -149,8 +170,59 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // 클라우드 (선택적 바인딩 - null 방지)
-    if (gDriveBtn) gDriveBtn.addEventListener("click", () => { if (finalVideoBlob) window.open('https://drive.google.com/drive/my-drive', '_blank'); });
+    // 🌟 진짜 구글 드라이브 API 업로드 엔진 🔥
+    async function executeDriveUpload() {
+        if (!finalVideoBlob) return;
+        statusText.textContent = "구글 드라이브 고속 업로드 중... ☁️";
+        statusText.style.color = "var(--text-white)";
+        
+        try {
+            // 1단계: 미디어 데이터 전송 (임시 파일 생성)
+            const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=media', {
+                method: 'POST',
+                headers: new Headers({ 
+                    'Authorization': 'Bearer ' + uploadAccessToken,
+                    'Content-Type': 'video/mp4'
+                }),
+                body: finalVideoBlob
+            });
+            const uploadedFile = await uploadResponse.json();
+            
+            // 2단계: 임시 파일의 이름을 정확히 (RenderJet_파일명) 설정
+            const finalName = `RenderJet_${currentFile.name}`;
+            await fetch(`https://www.googleapis.com/drive/v3/files/${uploadedFile.id}`, {
+                method: 'PATCH',
+                headers: new Headers({ 
+                    'Authorization': 'Bearer ' + uploadAccessToken,
+                    'Content-Type': 'application/json'
+                }),
+                body: JSON.stringify({ name: finalName })
+            });
+            
+            statusText.textContent = "Google Drive 전송 완료! ✅";
+            statusText.style.color = "var(--neon-green)";
+            alert("사장님! 구글 드라이브에 성공적으로 전송 완료되었습니다! 🚀");
+            window.open('https://drive.google.com/drive/my-drive', '_blank'); // 확인용 드라이브 열기
+        } catch (err) {
+            console.error(err);
+            statusText.textContent = "클라우드 전송 실패: 인터넷을 확인해주세요 🚫";
+            statusText.style.color = "red";
+        }
+    }
+
+    // 클라우드 버튼 개조 (구글 드라이브 버튼 클릭 시 진짜 API 발동!)
+    if (gDriveBtn) {
+        gDriveBtn.addEventListener("click", () => { 
+            if (!finalVideoBlob) return;
+            if (uploadAccessToken) {
+                executeDriveUpload(); // 이미 열쇠가 있으면 바로 올리기
+            } else {
+                tokenClient.requestAccessToken({prompt: 'consent'}); // 열쇠가 없으면 동의 화면(간판) 띄우기
+            }
+        }); 
+    }
+    
+    // 나머지 서비스들은 기존처럼 단순 바로가기 유지
     if (dropboxBtn) dropboxBtn.addEventListener("click", () => { if (finalVideoBlob) window.open('https://www.dropbox.com/home', '_blank'); });
     if (myboxBtn) myboxBtn.addEventListener("click", () => { if (finalVideoBlob) window.open('https://mybox.naver.com/', '_blank'); });
 
@@ -211,5 +283,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btnKo.addEventListener("click", () => setLanguage("ko"));
     btnEn.addEventListener("click", () => setLanguage("en"));
     initEngine();
+    setTimeout(initGoogleClient, 1000); // 엔진 시동 후 1초 뒤 구글클라이언트 대기
     setLanguage("ko");
 });
