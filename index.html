@@ -8,8 +8,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/umd/ffmpeg.js"></script>
-    <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+    <!-- 🔥 맥북 호환성 극대화: FFmpeg v0.11 엔진 로드 -->
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
 </head>
 <body class="dual-panel-theme">
     <div class="ambient-glow purple"></div>
@@ -49,7 +49,7 @@
                     </div>
                     <button class="select-btn" data-i18n="select-btn">SELECT FILE ▲</button>
                     <div class="secure-badge">
-                        <span class="badge-icon">🛡️</span> FFMPEG_FINAL_ENGINE
+                        <span class="badge-icon">🛡️</span> FFMPEG_SMOOTH_ENGINE
                     </div>
                     <input type="file" id="file-input" accept="video/*" hidden>
                 </div>
@@ -57,7 +57,7 @@
 
             <section class="panel side-right" id="right-panel">
                 <div class="guide-box" id="guide-box">
-                    <p data-i18n="guide-text">Engine Booting...</p>
+                    <p data-i18n="guide-text">엔진 활성화 중...</p>
                 </div>
 
                 <div class="settings-content hidden" id="controls-panel">
@@ -90,16 +90,12 @@
                     <div class="neon-bar-container">
                         <div class="neon-bar-fill" id="progress-bar"></div>
                     </div>
-                    
-                    <!-- 🛑 중요: 가짜 링크 박스 삭제, 다운로드 버튼 전용 구역 마련 -->
                     <div id="final-result-box" class="hidden">
                         <div class="action-footer" style="padding-bottom: 25px;">
                             <a id="real-dl-link" href="#" class="action-btn-neon speed-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center;" download>DOWNLOAD FINAL VIDEO ⬇️</a>
                         </div>
-                        <div class="status-log" style="color: var(--neon-green); font-weight: 800; font-size: 1.1rem; text-align: center;">가속 인코딩 완료! ✨</div>
                     </div>
-
-                    <p class="status-log" id="status-text" data-i18n="status-log">Ready to process...</p>
+                    <p class="status-log" id="status-text" data-i18n="status-log">Processing core data...</p>
                 </div>
             </section>
         </main>
