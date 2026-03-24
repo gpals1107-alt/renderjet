@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // DOM 요소
     const dropZone = document.getElementById("drop-zone");
     const fileInput = document.getElementById("file-input");
     const guideBox = document.getElementById("guide-box");
@@ -21,9 +22,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnEn = document.getElementById("lang-en");
     let currentLang = "ko";
 
-    // 💣 🔥 맥북/사파리 호환 FFmpeg v0.11 객체
+    // FFmpeg v0.11 호환성 보강
     const { createFFmpeg, fetchFile } = FFmpeg;
-    let ffmpeg = null;
+    let ffmpeg = createFFmpeg({
+        log: true,
+        corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+    });
     let ffmpegLoaded = false;
 
     const i18n = {
@@ -45,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "빠른 피드백용 / 단톡방·슬랙 공유 추천",
                 "폰에서 빨리 보기용 / 데이터 절약 모드"
             ],
-            "dl-finish": "DOWNLOAD FINAL VIDEO ⬇️ (압축 완료)"
+            "dl-finish": "DOWNLOAD FINAL VIDEO ⬇️"
         },
         en: {
             "slogan": "PRO VIDEO COMPRESSION ENGINE",
@@ -65,21 +69,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 "Reduced for Instant Team Messaging",
                 "Smallest Format / Mobile Only"
             ],
-            "dl-finish": "DOWNLOAD FINAL VIDEO ⬇️ (SONIC SUCCESS)"
+            "dl-finish": "DOWNLOAD FINAL VIDEO ⬇️"
         }
     };
 
-    // 🧬 엔진 시동 (v0.11 맥북 필살기 버전)
+    // 🧬 엔진 시동 (진행 상황 실시간 추적 강화)
     async function initEngine() {
         try {
-            ffmpeg = createFFmpeg({
-                log: true,
-                corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
-            });
-
             ffmpeg.setProgress(({ ratio }) => {
-                progressBar.style.width = `${(ratio * 100).toFixed(0)}%`;
-                statusText.textContent = `Rendering Engine: ${(ratio * 100).toFixed(0)}% Complete`;
+                const percent = Math.floor(ratio * 100);
+                progressBar.style.width = `${percent}%`;
+                statusText.textContent = `Rendering Engine: ${percent}% Complete`;
+                console.log(`[PROGRESS] ${percent}%`);
+                if (percent > 0) statusText.style.color = "var(--neon-green)";
             });
 
             await ffmpeg.load();
@@ -87,8 +89,8 @@ document.addEventListener("DOMContentLoaded", () => {
             guideBox.querySelector('p').textContent = i18n[currentLang]["guide-ready"];
             console.log("RENDERJET_LOADED_OK_V11");
         } catch (e) {
-            console.error(e);
-            guideBox.querySelector('p').innerHTML = "엔진 시동에 특수 보안 해제가 필요합니다. <br>시크릿 모드에서 다시 시도해 주세요!";
+            console.error("BOOT_ERROR", e);
+            guideBox.querySelector('p').innerHTML = "엔진 시동에 실패했습니다. <br>시크릿 모드에서 다시 시도해 주세요!";
         }
     }
 
@@ -116,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function handleFile(file) {
-        if (!file.type.startsWith("video/")) return alert("동영상 파일만 업로드하세요.");
+        if (!file.type.startsWith("video/")) return alert("Only video files.");
         currentFile = file;
         guideBox.classList.add("hidden");
         controlsPanel.classList.remove("hidden");
@@ -127,47 +129,55 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function updateEstimate() {
         if (!currentFile) return;
-        const crf = parseInt(compressionSlider.value);
+        const crfValue = parseInt(compressionSlider.value);
         let qIdx = 0;
-        if (crf <= 22) qIdx = 0;
-        else if (crf <= 28) qIdx = 1;
-        else if (crf <= 34) qIdx = 2;
+        if (crfValue <= 22) qIdx = 0;
+        else if (crfValue <= 28) qIdx = 1;
+        else if (crfValue <= 34) qIdx = 2;
         else qIdx = 3;
 
         qualityBadge.textContent = i18n[currentLang]["q-names"][qIdx];
         qualityDesc.textContent = i18n[currentLang]["q-descs"][qIdx];
         originalSizeDisplay.textContent = formatBytes(currentFile.size);
-        const ratio = (100 - ((crf - 18) * 3)) / 100;
+        const ratio = (100 - ((crfValue - 18) * 3)) / 100;
         estimatedSize.textContent = formatBytes(currentFile.size * Math.max(0.1, ratio));
     }
 
-    // 🚀 인코딩 가속 시작 (v0.11 명령어 셋)
+    // 🚀 인코딩 시작 (가장 안전한 가공 방식 적용)
     startBtn.addEventListener("click", async () => {
-        if (!ffmpegLoaded) return alert("엔진 시동 중...");
+        if (!ffmpegLoaded) return alert("엔진 로딩 중입니다...");
         
         controlsPanel.classList.add("hidden");
         statusPanel.classList.remove("hidden");
         finalResultBox.classList.add("hidden"); 
-        
-        const crfValue = Math.max(18, Math.min(51, 58 - compressionSlider.value));
+        progressBar.style.width = "2%"; // 시동 직후 표시
+        statusText.textContent = "가속 인코딩 준비 중...";
+
+        const crfParam = Math.max(18, Math.min(51, 58 - compressionSlider.value));
 
         try {
-            ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(currentFile));
-            statusText.textContent = "가속 인코딩 시작 (libx264)";
+            // 🧼 1. 구버전은 파일 쓰기 전 메모리 체크
+            statusText.textContent = "데이터 주입 중 (Buffer Fetching)...";
+            const fileData = await fetchFile(currentFile);
+            ffmpeg.FS('writeFile', 'input.mp4', fileData);
 
+            statusText.textContent = "엔진 가속 개시 (Rendering Core)...";
+            
+            // 🎬 2. 명시적 인코딩 실행
             await ffmpeg.run(
                 '-i', 'input.mp4',
                 '-vcodec', 'libx264',
-                '-crf', crfValue.toString(),
-                '-preset', 'veryfast',
+                '-crf', crfParam.toString(),
+                '-preset', 'ultrafast', // 맥북프로 성능을 믿고 가장 빠른 프리셋 적용!
                 'output.mp4'
             );
 
+            // 📤 3. 결과물 추출
             const data = ffmpeg.FS('readFile', 'output.mp4');
             const resultUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
             
             progressBar.style.width = "100%";
-            statusText.textContent = "JET 가공 완료 ✨";
+            statusText.textContent = "JET 가공 성공! ✨";
             
             realDlLink.href = resultUrl;
             realDlLink.setAttribute("download", `RenderJet_Result_${currentFile.name}`);
@@ -176,8 +186,8 @@ document.addEventListener("DOMContentLoaded", () => {
             finalResultBox.classList.remove("hidden");
 
         } catch (e) {
-            console.error(e);
-            statusText.textContent = "가공 실패: 리소스가 부족합니다.";
+            console.error("ENCODING_ERROR", e);
+            statusText.textContent = "ENGINE_HALT: 브라우저 연산 중단 발생.";
             statusText.style.color = "red";
         }
     });
