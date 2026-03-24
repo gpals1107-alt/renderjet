@@ -28,14 +28,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnEn = document.getElementById("lang-en");
     let currentLang = "ko";
 
-    // 💣 🔥 맥북/사파리 호환 FFmpeg v0.11 객체
+    // FFmpeg v0.11 객체
     const { createFFmpeg, fetchFile } = FFmpeg;
     let ffmpeg = createFFmpeg({
         log: true,
         corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
     });
     let ffmpegLoaded = false;
-    let finalVideoBlob = null; // 클라우드 전송용 실제 데이터
+    let finalVideoBlob = null; 
 
     const i18n = {
         ko: {
@@ -80,22 +80,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // 🧬 엔진 시동 (맥북 필살기 버전)
+    // 엔진 시동
     async function initEngine() {
         try {
             ffmpeg.setProgress(({ ratio }) => {
                 const percent = Math.floor(ratio * 100);
                 progressBar.style.width = `${percent}%`;
                 statusText.textContent = `Rendering Engine: ${percent}% Complete`;
-                if (percent > 0) statusText.style.color = "var(--neon-green)";
             });
-
             await ffmpeg.load();
             ffmpegLoaded = true;
             guideBox.querySelector('p').textContent = i18n[currentLang]["guide-ready"];
         } catch (e) {
             console.error(e);
-            guideBox.querySelector('p').innerHTML = "엔진 시동 지연 중... <br>새로고침(F5)을 시도해 보세요!";
         }
     }
 
@@ -122,8 +119,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + ['Bytes','KB','MB','GB','TB'][i];
     }
 
+    // 🧬 핵심: 파일 처리 로직 (공통 사용)
     function handleFile(file) {
-        if (!file.type.startsWith("video/")) return alert("Only video files.");
+        if (!file || !file.type.startsWith("video/")) return alert("Only video files.");
         currentFile = file;
         guideBox.classList.add("hidden");
         controlsPanel.classList.remove("hidden");
@@ -148,85 +146,84 @@ document.addEventListener("DOMContentLoaded", () => {
         estimatedSize.textContent = formatBytes(currentFile.size * Math.max(0.1, ratio));
     }
 
-    // 🚀 인코딩 시작 (가공 방식 최적화)
+    // 인코딩 시작
     startBtn.addEventListener("click", async () => {
-        if (!ffmpegLoaded) return alert("엔진 시동 중...");
-        
+        if (!ffmpegLoaded) return alert("엔진 로딩 중...");
         controlsPanel.classList.add("hidden");
         statusPanel.classList.remove("hidden");
         finalResultBox.classList.add("hidden"); 
-        progressBar.style.width = "2%";
-        statusText.textContent = "데이터 주입 중 (Buffer Fetching)...";
 
         const crfParam = Math.max(18, Math.min(51, 58 - compressionSlider.value));
 
         try {
             ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(currentFile));
-            statusText.textContent = "엔진 가속 개시 (Processing Core)...";
-            
-            await ffmpeg.run(
-                '-i', 'input.mp4',
-                '-vcodec', 'libx264',
-                '-crf', crfParam.toString(),
-                '-preset', 'ultrafast',
-                'output.mp4'
-            );
-
+            await ffmpeg.run('-i', 'input.mp4', '-vcodec', 'libx264', '-crf', crfParam.toString(), '-preset', 'ultrafast', 'output.mp4');
             const data = ffmpeg.FS('readFile', 'output.mp4');
             finalVideoBlob = new Blob([data.buffer], { type: 'video/mp4' });
             const resultUrl = URL.createObjectURL(finalVideoBlob);
-            
             progressBar.style.width = "100%";
             statusText.textContent = "JET 가공 성공! ✨";
-            
             realDlLink.href = resultUrl;
             realDlLink.setAttribute("download", `RenderJet_Result_${currentFile.name}`);
             realDlLink.textContent = i18n[currentLang]["dl-finish"];
-            
             finalResultBox.classList.remove("hidden");
-
-            // 🌟 클라우드 영역 '활성화' (희미했던 영역이 밝아짐!)
             cloudArea.style.opacity = "1";
-            cloudArea.querySelectorAll(".cloud-tile").forEach(btn => btn.style.cursor = "pointer");
-
         } catch (e) {
             console.error(e);
             statusText.textContent = "가공 실패: 리소스 재확인이 필요합니다.";
-            statusText.style.color = "red";
         }
     });
 
-    // ☁️ [클라우드 전송] 하이라이트 기능 구현
-    gDriveBtn.addEventListener("click", () => {
-        if (!finalVideoBlob) return;
-        alert("구글 드라이브 업로더를 실행합니다.\n(현재 데모 버전: 수동 업로드 창이 열립니다!)");
-        window.open('https://drive.google.com/drive/my-drive', '_blank');
+    // ☁️ 클라우드 전송
+    [gDriveBtn, dropboxBtn, myboxBtn].forEach((btn, idx) => {
+        const urls = ['https://drive.google.com/drive/my-drive', 'https://www.dropbox.com/home', 'https://mybox.naver.com/'];
+        btn.addEventListener("click", () => {
+            if (!finalVideoBlob) return;
+            window.open(urls[idx], '_blank');
+        });
     });
 
-    dropboxBtn.addEventListener("click", () => {
-        if (!finalVideoBlob) return;
-        alert("드롭박스 업로더를 실행합니다.");
-        window.open('https://www.dropbox.com/home', '_blank');
+    // 🧬 🔥 드래그앤드롭 [초강력 복구] 레이어 🔥 🧬
+    // 브라우저 기본 동작 방지 (매우 중요!)
+    window.addEventListener("dragover", e => e.preventDefault());
+    window.addEventListener("drop", e => e.preventDefault());
+
+    // 구심점 영역 (Drop Zone) 센서 강화
+    ["dragenter", "dragover"].forEach(name => {
+        dropZone.addEventListener(name, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.style.boxShadow = "inset 0 0 50px rgba(168, 85, 247, 0.4)";
+            dropZone.style.borderColor = "var(--neon-purple)";
+        });
     });
 
-    myboxBtn.addEventListener("click", () => {
-        if (!finalVideoBlob) return;
-        alert("마이박스(네이버) 업로더를 실행합니다.");
-        window.open('https://mybox.naver.com/', '_blank');
+    ["dragleave", "drop"].forEach(name => {
+        dropZone.addEventListener(name, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.style.boxShadow = "none";
+            dropZone.style.borderColor = "rgba(255, 255, 255, 0.1)";
+        });
     });
 
-    // 이벤트 리스너들
-    ["dragenter", "dragover", "dragleave", "drop"].forEach(name => {
-        dropZone.addEventListener(name, e => { e.preventDefault(); e.stopPropagation(); });
-    });
     dropZone.addEventListener("drop", (e) => {
         const files = e.dataTransfer.files;
-        if (files.length > 0) handleFile(files[0]);
+        if (files && files.length > 0) {
+            console.log("DROP_FILE_DETECTED:", files[0].name);
+            handleFile(files[0]);
+        }
     });
-    dropZone.querySelector('.select-btn').addEventListener("click", () => fileInput.click());
+
+    // 일반 파일 선택 버튼 (Back-up)
+    dropZone.querySelector('.select-btn').addEventListener("click", (e) => {
+        e.stopPropagation();
+        fileInput.click();
+    });
     fileInput.addEventListener("change", (e) => {
         if (e.target.files.length > 0) handleFile(e.target.files[0]);
     });
+
     compressionSlider.addEventListener("input", updateEstimate);
 
     initEngine();
