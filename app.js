@@ -104,8 +104,22 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!currentFile) return;
         const crf = parseInt(compressionSlider.value);
         const qNames = currentLang === "ko" ? ["원본 무손실", "유튜브 고화질", "시안 확인용", "모바일 초압축"] : ["Lossless Master", "Premium Quality", "Quick Review", "Lite Jet"];
+        const qDescs = currentLang === "ko" ? [
+            "마스터 보관용 / 4K 화질 100% 보존",
+            "4K·FHD 전송용 / 눈에 띄는 손실 없음",
+            "빠른 피드백용 / 단톡방·슬랙 공유 추천",
+            "폰에서 빨리 보기용 / 데이터 절약 모드"
+        ] : [
+            "Archival Grade / 100% Original Quality",
+            "Best for 4K Review / Pro Export",
+            "Reduced for Instant Team Messaging",
+            "Smallest Format / Mobile Only"
+        ];
+        
         let qIdx = crf <= 22 ? 0 : crf <= 28 ? 1 : crf <= 34 ? 2 : 3;
         qualityBadge.textContent = qNames[qIdx];
+        qualityDesc.textContent = qDescs[qIdx]; // 사라졌던 설명 문구 업데이트 복구!
+        
         originalSizeDisplay.textContent = formatBytes(currentFile.size);
         const ratio = (100 - ((crf - 18) * 3)) / 100;
         estimatedSize.textContent = formatBytes(currentFile.size * Math.max(0.1, ratio));
