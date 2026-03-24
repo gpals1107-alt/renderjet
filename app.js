@@ -2,7 +2,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // 1. 필요한 모든 DOM 요소
     const dropZone = document.getElementById("drop-zone");
     const fileInput = document.getElementById("file-input");
-    const rightPanel = document.getElementById("right-panel");
     const guideBox = document.getElementById("guide-box");
     const controlsPanel = document.getElementById("controls-panel");
     const compressionSlider = document.getElementById("compression-slider");
@@ -20,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const finalResultBox = document.getElementById("final-result-box");
     const realDlLink = document.getElementById("real-dl-link");
 
-    // 다국어 
+    // 다국어
     const btnKo = document.getElementById("lang-ko");
     const btnEn = document.getElementById("lang-en");
     let currentLang = "ko";
@@ -28,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // FFmpeg
     let ffmpeg = null;
     let ffmpegLoaded = false;
+    let loadingRetryCount = 0;
 
     // 2. 다국어 딕셔너리
     const i18n = {
@@ -36,12 +36,12 @@ document.addEventListener("DOMContentLoaded", () => {
             "import-title": "마스터 파일 임포트",
             "import-sub": "4K 영상 파일을 드래그하세요 (최대 2GB)",
             "select-btn": "파일 선택 ▲",
-            "guide-text": "엔진 시동 중...",
-            "guide-ready": "파일을 올리면 인코딩 설정을 시작할 수 있습니다.",
+            "guide-text": "엔진 활성화 중... (약 10초 소요)",
+            "guide-ready": "엔진이 준비되었습니다! 파일을 올려주세요.",
             "label-quality": "화질 설정 / 압축률",
             "btn-accel": "JET 가속 시작 🚀",
             "status-title": "가속 인코딩 중...",
-            "status-log": "엔진 최적화 중...",
+            "status-log": "데이터 조각 최적화 중...",
             "q-names": ["원본 무손실", "유튜브 고화질", "시안 확인용", "모바일 초압축"],
             "q-descs": [
                 "마스터 보관용 / 4K 화질 100% 보존",
@@ -49,19 +49,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 "빠른 피드백용 / 단톡방·슬랙 공유 추천",
                 "폰에서 빨리 보기용 / 데이터 절약 모드"
             ],
-            "dl-finish": "DOWNLOAD FINAL VIDEO ⬇️ (압축 완료)"
+            "dl-finish": "DOWNLOAD FINAL VIDEO ⬇️"
         },
         en: {
             "slogan": "PRO VIDEO COMPRESSION ENGINE",
             "import-title": "Import Master File",
             "import-sub": "Drag your 4K master (Max 2GB)",
             "select-btn": "SELECT FILE ▲",
-            "guide-text": "Loading Engine...",
-            "guide-ready": "Drop your file to configure encoding settings.",
+            "guide-text": "Activating Engine... (Wait 10s)",
+            "guide-ready": "Engine Ready! Please drop your video.",
             "label-quality": "JET_SPEED / QUALITY",
             "btn-accel": "JET_ACCELERATE 🚀",
             "status-title": "ACCELERATING...",
-            "status-log": "Optimizing engine...",
+            "status-log": "Packet optimizing...",
             "q-names": ["Lossless Master", "Premium Quality", "Quick Review", "Lite Jet"],
             "q-descs": [
                 "Archival Grade / 100% Original Quality",
@@ -69,38 +69,53 @@ document.addEventListener("DOMContentLoaded", () => {
                 "Reduced for Instant Team Messaging",
                 "Smallest Format / Mobile Only"
             ],
-            "dl-finish": "DOWNLOAD FINAL VIDEO ⬇️ (SONIC SUCCESS)"
+            "dl-finish": "DOWNLOAD FINAL VIDEO ⬇️"
         }
     };
 
-    // 3. 엔진 시동 (최종 최적화)
+    // 3. 엔진 시동 (울트라 안정화 버전)
     async function initEngine() {
+        if (ffmpegLoaded) return;
+        
         try {
+            console.log("ENGINE_BOOT_START");
             ffmpeg = new FFmpeg.FFmpeg();
+            
             ffmpeg.on('log', ({ message }) => {
+                console.log("[FFMPEG]", message);
                 if (message && message.includes('time=')) statusText.textContent = `Processing: ${message.substring(0, 30)}...`;
             });
 
-            // 엔진 로드 🧨🧨🧨
+            // 🚀 글로벌 초고속 CDN 채널로 변경! (jsdelivr 연동)
+            const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+            
             await ffmpeg.load({
-                coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
-                wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm'
+                coreURL: `${baseURL}/ffmpeg-core.js`,
+                wasmURL: `${baseURL}/ffmpeg-core.wasm`
             });
 
             ffmpegLoaded = true;
+            console.log("ENGINE_BOOT_SUCCESS!");
             if (guideBox && guideBox.querySelector('p')) {
                 guideBox.querySelector('p').textContent = i18n[currentLang]["guide-ready"];
+                guideBox.querySelector('p').style.color = "var(--neon-green)";
             }
-            console.log("ENGINE_READY_COMPLETE");
         } catch (e) {
-            console.error("FFMPEG_LOAD_FAILED:", e);
-            if (guideBox && guideBox.querySelector('p')) {
-                guideBox.querySelector('p').innerHTML = "엔진 시동에 실패했습니다. <br>인터넷 연결 상태를 확인하고 새로고침 해주세요.";
+            console.error("ENGINE_BOOT_ERROR:", e);
+            loadingRetryCount++;
+            if (loadingRetryCount < 3) {
+                console.log("Retrying engine load...");
+                setTimeout(initEngine, 2000);
+            } else {
+                if (guideBox && guideBox.querySelector('p')) {
+                    guideBox.querySelector('p').innerHTML = "보안 환경으로 인해 엔진 시동이 제한되었습니다. <br>시크릿 모드에서 다시 시도해 보세요!";
+                    guideBox.querySelector('p').style.color = "#ff4444";
+                }
             }
         }
     }
 
-    // 4. 언어 전환 및 UI 반영
+    // 4. 언어 전환
     function setLanguage(lang) {
         currentLang = lang;
         document.querySelectorAll("[data-i18n]").forEach(el => {
@@ -115,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnKo.addEventListener("click", () => setLanguage("ko"));
     btnEn.addEventListener("click", () => setLanguage("en"));
 
-    // 5. 핵심 로직: 화질 셋업
+    // 5. 핵심 로직
     let currentFile = null;
 
     function formatBytes(bytes, decimals = 2) {
@@ -126,7 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function handleFile(file) {
-        if (!file.type.startsWith("video/")) return alert("동영상 파일만 가능합니다.");
+        if (!file.type.startsWith("video/")) return alert("Only video files.");
         currentFile = file;
         guideBox.classList.add("hidden");
         controlsPanel.classList.remove("hidden");
@@ -151,10 +166,10 @@ document.addEventListener("DOMContentLoaded", () => {
         estimatedSize.textContent = formatBytes(currentFile.size * Math.max(0.1, ratio));
     }
 
-    // 6. 🚀 가속 실전 (인코딩)
+    // 6. 🚀 인코딩 가동!
     startBtn.addEventListener("click", async () => {
         if (!ffmpegLoaded) {
-            alert("엔진 시동 중입니다. 잠시만 기다려 주세요!");
+            alert("엔진 시동에 실패했거나 아직 로딩 중입니다. 새로고침 후 10초만 기다려 주세요!");
             return;
         }
         
@@ -164,16 +179,16 @@ document.addEventListener("DOMContentLoaded", () => {
         progressBar.style.width = "20%"; 
         
         const { fetchFile } = FFmpeg;
-        const finalCrf = Math.max(18, Math.min(51, 58 - compressionSlider.value));
+        const crfValue = Math.max(18, Math.min(51, 58 - compressionSlider.value));
 
         try {
             await ffmpeg.writeFile("input.mp4", await fetchFile(currentFile));
-            statusText.textContent = "가속 인코딩 시작... (libx264)";
+            statusText.textContent = "가속 인코딩 개시 (초광속 모드)...";
 
             await ffmpeg.exec([
                 '-i', 'input.mp4',
                 '-vcodec', 'libx264',
-                '-crf', finalCrf.toString(),
+                '-crf', crfValue.toString(),
                 '-preset', 'veryfast',
                 'output.mp4'
             ]);
@@ -192,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (e) {
             console.error(e);
-            statusText.textContent = "가공 실패: 엔진 부하가 너무 큽니다.";
+            statusText.textContent = "가공 실패: 브라우저가 연산을 중단했습니다.";
             statusText.style.color = "red";
         }
     });
@@ -210,7 +225,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     compressionSlider.addEventListener("input", updateEstimate);
 
-    // 엔진 가동 시작!
+    // 자동 시동!
     initEngine();
     setLanguage("ko");
 });
