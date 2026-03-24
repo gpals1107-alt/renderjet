@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "import-title": "마스터 파일 임포트",
             "import-sub": "4K 영상 파일을 드래그하세요 (최대 2GB)",
             "select-btn": "파일 선택 ▲",
-            "guide-text": "엔진 로딩 중...",
+            "guide-text": "엔진 시동 중...",
             "guide-ready": "파일을 올리면 인코딩 설정을 시작할 수 있습니다.",
             "label-quality": "화질 설정 / 압축률",
             "btn-accel": "JET 가속 시작 🚀",
@@ -73,21 +73,30 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // 3. 엔진 초기화
+    // 3. 엔진 시동 (최종 최적화)
     async function initEngine() {
         try {
             ffmpeg = new FFmpeg.FFmpeg();
             ffmpeg.on('log', ({ message }) => {
-                if (message.includes('time=')) statusText.textContent = `Processing: ${message.substring(0, 30)}...`;
+                if (message && message.includes('time=')) statusText.textContent = `Processing: ${message.substring(0, 30)}...`;
             });
+
+            // 엔진 로드 🧨🧨🧨
             await ffmpeg.load({
                 coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
                 wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm'
             });
+
             ffmpegLoaded = true;
-            guideBox.querySelector('p').textContent = i18n[currentLang]["guide-ready"];
+            if (guideBox && guideBox.querySelector('p')) {
+                guideBox.querySelector('p').textContent = i18n[currentLang]["guide-ready"];
+            }
+            console.log("ENGINE_READY_COMPLETE");
         } catch (e) {
-            console.error("FFMPEG LOAD ERR:", e);
+            console.error("FFMPEG_LOAD_FAILED:", e);
+            if (guideBox && guideBox.querySelector('p')) {
+                guideBox.querySelector('p').innerHTML = "엔진 시동에 실패했습니다. <br>인터넷 연결 상태를 확인하고 새로고침 해주세요.";
+            }
         }
     }
 
@@ -117,7 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function handleFile(file) {
-        if (!file.type.startsWith("video/")) return alert("Only video files supported.");
+        if (!file.type.startsWith("video/")) return alert("동영상 파일만 가능합니다.");
         currentFile = file;
         guideBox.classList.add("hidden");
         controlsPanel.classList.remove("hidden");
@@ -144,44 +153,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 6. 🚀 가속 실전 (인코딩)
     startBtn.addEventListener("click", async () => {
-        if (!ffmpegLoaded) return alert("엔진 로딩 중입니다. 잠시만 기다려 주세요!");
+        if (!ffmpegLoaded) {
+            alert("엔진 시동 중입니다. 잠시만 기다려 주세요!");
+            return;
+        }
         
         controlsPanel.classList.add("hidden");
         statusPanel.classList.remove("hidden");
-        finalResultBox.classList.add("hidden"); // 초기화 시 숨기기
-        progressBar.style.width = "20%"; // 로딩중 시각적 표시
+        finalResultBox.classList.add("hidden"); 
+        progressBar.style.width = "20%"; 
         
         const { fetchFile } = FFmpeg;
-        const crfValue = Math.max(18, Math.min(51, 58 - compressionSlider.value));
+        const finalCrf = Math.max(18, Math.min(51, 58 - compressionSlider.value));
 
         try {
-            await ffmpeg.writeFile("input_src.mp4", await fetchFile(currentFile));
+            await ffmpeg.writeFile("input.mp4", await fetchFile(currentFile));
             statusText.textContent = "가속 인코딩 시작... (libx264)";
 
             await ffmpeg.exec([
-                '-i', 'input_src.mp4',
+                '-i', 'input.mp4',
                 '-vcodec', 'libx264',
-                '-crf', crfValue.toString(),
+                '-crf', finalCrf.toString(),
                 '-preset', 'veryfast',
-                'final_jet.mp4'
+                'output.mp4'
             ]);
 
-            const data = await ffmpeg.readFile('final_jet.mp4');
+            const data = await ffmpeg.readFile('output.mp4');
             const resultUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
             
-            // 🌟 싹 다 치우고 버튼만 남기기 🌟
             progressBar.style.width = "100%";
             statusText.classList.add("hidden");
             
             realDlLink.href = resultUrl;
-            realDlLink.setAttribute("download", `RenderJet_Result_${currentFile.name}`);
+            realDlLink.setAttribute("download", `RenderJet_${currentFile.name}`);
             realDlLink.textContent = i18n[currentLang]["dl-finish"];
             
-            finalResultBox.classList.remove("hidden"); // 절대 노출!!
+            finalResultBox.classList.remove("hidden"); // 대망의 버튼 등장!
 
         } catch (e) {
             console.error(e);
-            statusText.textContent = "ERROR: ENCODING_FAILED.";
+            statusText.textContent = "가공 실패: 엔진 부하가 너무 큽니다.";
+            statusText.style.color = "red";
         }
     });
 
@@ -198,6 +210,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     compressionSlider.addEventListener("input", updateEstimate);
 
+    // 엔진 가동 시작!
     initEngine();
     setLanguage("ko");
 });
