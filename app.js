@@ -19,9 +19,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const realDlLink = document.getElementById("real-dl-link");
 
     const cloudArea = document.querySelector(".cloud-export-v2");
-    const gDriveBtn = document.querySelector(".cloud-tile:nth-child(1)");
-    const dropboxBtn = document.querySelector(".cloud-tile:nth-child(2)");
-    const myboxBtn = document.querySelector(".cloud-tile:nth-child(3)");
+    const gDriveBtn = document.getElementById("cloud-gdrive");
+    const dropboxBtn = document.getElementById("cloud-dropbox");
+    const myboxBtn = document.getElementById("cloud-mybox");
 
     const btnKo = document.getElementById("lang-ko");
     const btnEn = document.getElementById("lang-en");
@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 🧬 핵심: 파일 처리
+    // 파일 처리
     function handleFile(file) {
         if (!file || !file.type.startsWith("video/")) return alert("Only video files allowed.");
         currentFile = file;
@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
         estimatedSize.textContent = formatBytes(currentFile.size * Math.max(0.1, ratio));
     }
 
-    // 🚀 인코딩 가동
+    // 인코딩 가동
     startBtn.addEventListener("click", async () => {
         if (!ffmpegLoaded) return alert("엔진 로딩 중입니다.");
         controlsPanel.classList.add("hidden");
@@ -128,40 +128,32 @@ document.addEventListener("DOMContentLoaded", () => {
             progressBar.style.width = "100%";
             statusText.textContent = "가공 완료! ✨";
             finalResultBox.classList.remove("hidden");
-            cloudArea.style.opacity = "1";
+            if(cloudArea) cloudArea.style.opacity = "1";
         } catch (e) {
             console.error(e);
             statusText.textContent = "에러: 브라우저가 연산을 중단했습니다.";
         }
     });
 
-    // ☁️ 클라우드
-    [gDriveBtn, dropboxBtn, myboxBtn].forEach((btn, idx) => {
-        const urls = ['https://drive.google.com/drive/my-drive', 'https://www.dropbox.com/home', 'https://mybox.naver.com/'];
-        btn.addEventListener("click", () => {
-            if (finalVideoBlob) window.open(urls[idx], '_blank');
-        });
-    });
+    // 클라우드 (선택적 바인딩 - null 방지)
+    if (gDriveBtn) gDriveBtn.addEventListener("click", () => { if (finalVideoBlob) window.open('https://drive.google.com/drive/my-drive', '_blank'); });
+    if (dropboxBtn) dropboxBtn.addEventListener("click", () => { if (finalVideoBlob) window.open('https://www.dropbox.com/home', '_blank'); });
+    if (myboxBtn) myboxBtn.addEventListener("click", () => { if (finalVideoBlob) window.open('https://mybox.naver.com/', '_blank'); });
 
-    // 🧬 🔥 드래그앤드롭 [최후의 강적 사냥] 레이어 🔥 🧬
-
-    // 1. 브라우저 전체 드롭 금지 해제
+    // 드래그앤드롭 전체 윈도우 지원
     window.addEventListener("dragover", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        // 드래그 중 화면 전체에 미세한 보라색 오버레이 (선택사항)
     }, false);
 
     window.addEventListener("drop", (e) => {
         e.preventDefault();
         e.stopPropagation();
         const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-            handleFile(files[0]);
-        }
+        if (files && files.length > 0) handleFile(files[0]);
     }, false);
 
-    // 2. 판넬 영역 강조 센서 (기존 유지 + 강화)
+    // 판넬 디자인 피드백
     ["dragenter", "dragover"].forEach(name => {
         dropZone.addEventListener(name, (e) => {
             e.preventDefault(); e.stopPropagation();
@@ -178,14 +170,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // 3. 파일 선택 버튼 확실히 뚫기 (최후의 보루)
-    const triggerInput = () => {
-        console.log("SELECT_BTN_CLICKED");
-        fileInput.click();
-    };
+    const triggerInput = () => fileInput.click();
     dropZone.querySelector('.select-btn').addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+        e.preventDefault(); e.stopPropagation();
         triggerInput();
     });
     fileInput.addEventListener("change", (e) => {
