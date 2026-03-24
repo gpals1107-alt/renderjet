@@ -18,17 +18,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const finalResultBox = document.getElementById("final-result-box");
     const realDlLink = document.getElementById("real-dl-link");
 
+    // 클라우드 버튼들
+    const gDriveBtn = document.querySelector(".cloud-tile:nth-child(1)");
+    const dropboxBtn = document.querySelector(".cloud-tile:nth-child(2)");
+    const myboxBtn = document.querySelector(".cloud-tile:nth-child(3)");
+    const cloudArea = document.querySelector(".cloud-export-v2");
+
     const btnKo = document.getElementById("lang-ko");
     const btnEn = document.getElementById("lang-en");
     let currentLang = "ko";
 
-    // FFmpeg v0.11 호환성 보강
+    // 💣 🔥 맥북/사파리 호환 FFmpeg v0.11 객체
     const { createFFmpeg, fetchFile } = FFmpeg;
     let ffmpeg = createFFmpeg({
         log: true,
         corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
     });
     let ffmpegLoaded = false;
+    let finalVideoBlob = null; // 클라우드 전송용 실제 데이터
 
     const i18n = {
         ko: {
@@ -49,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "빠른 피드백용 / 단톡방·슬랙 공유 추천",
                 "폰에서 빨리 보기용 / 데이터 절약 모드"
             ],
-            "dl-finish": "DOWNLOAD FINAL VIDEO ⬇️"
+            "dl-finish": "DOWNLOAD FINAL VIDEO ⬇️ (압축 완료)"
         },
         en: {
             "slogan": "PRO VIDEO COMPRESSION ENGINE",
@@ -69,28 +76,26 @@ document.addEventListener("DOMContentLoaded", () => {
                 "Reduced for Instant Team Messaging",
                 "Smallest Format / Mobile Only"
             ],
-            "dl-finish": "DOWNLOAD FINAL VIDEO ⬇️"
+            "dl-finish": "DOWNLOAD FINAL VIDEO ⬇️ (SONIC SUCCESS)"
         }
     };
 
-    // 🧬 엔진 시동 (진행 상황 실시간 추적 강화)
+    // 🧬 엔진 시동 (맥북 필살기 버전)
     async function initEngine() {
         try {
             ffmpeg.setProgress(({ ratio }) => {
                 const percent = Math.floor(ratio * 100);
                 progressBar.style.width = `${percent}%`;
                 statusText.textContent = `Rendering Engine: ${percent}% Complete`;
-                console.log(`[PROGRESS] ${percent}%`);
                 if (percent > 0) statusText.style.color = "var(--neon-green)";
             });
 
             await ffmpeg.load();
             ffmpegLoaded = true;
             guideBox.querySelector('p').textContent = i18n[currentLang]["guide-ready"];
-            console.log("RENDERJET_LOADED_OK_V11");
         } catch (e) {
-            console.error("BOOT_ERROR", e);
-            guideBox.querySelector('p').innerHTML = "엔진 시동에 실패했습니다. <br>시크릿 모드에서 다시 시도해 주세요!";
+            console.error(e);
+            guideBox.querySelector('p').innerHTML = "엔진 시동 지연 중... <br>새로고침(F5)을 시도해 보세요!";
         }
     }
 
@@ -143,38 +148,33 @@ document.addEventListener("DOMContentLoaded", () => {
         estimatedSize.textContent = formatBytes(currentFile.size * Math.max(0.1, ratio));
     }
 
-    // 🚀 인코딩 시작 (가장 안전한 가공 방식 적용)
+    // 🚀 인코딩 시작 (가공 방식 최적화)
     startBtn.addEventListener("click", async () => {
-        if (!ffmpegLoaded) return alert("엔진 로딩 중입니다...");
+        if (!ffmpegLoaded) return alert("엔진 시동 중...");
         
         controlsPanel.classList.add("hidden");
         statusPanel.classList.remove("hidden");
         finalResultBox.classList.add("hidden"); 
-        progressBar.style.width = "2%"; // 시동 직후 표시
-        statusText.textContent = "가속 인코딩 준비 중...";
+        progressBar.style.width = "2%";
+        statusText.textContent = "데이터 주입 중 (Buffer Fetching)...";
 
         const crfParam = Math.max(18, Math.min(51, 58 - compressionSlider.value));
 
         try {
-            // 🧼 1. 구버전은 파일 쓰기 전 메모리 체크
-            statusText.textContent = "데이터 주입 중 (Buffer Fetching)...";
-            const fileData = await fetchFile(currentFile);
-            ffmpeg.FS('writeFile', 'input.mp4', fileData);
-
-            statusText.textContent = "엔진 가속 개시 (Rendering Core)...";
+            ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(currentFile));
+            statusText.textContent = "엔진 가속 개시 (Processing Core)...";
             
-            // 🎬 2. 명시적 인코딩 실행
             await ffmpeg.run(
                 '-i', 'input.mp4',
                 '-vcodec', 'libx264',
                 '-crf', crfParam.toString(),
-                '-preset', 'ultrafast', // 맥북프로 성능을 믿고 가장 빠른 프리셋 적용!
+                '-preset', 'ultrafast',
                 'output.mp4'
             );
 
-            // 📤 3. 결과물 추출
             const data = ffmpeg.FS('readFile', 'output.mp4');
-            const resultUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+            finalVideoBlob = new Blob([data.buffer], { type: 'video/mp4' });
+            const resultUrl = URL.createObjectURL(finalVideoBlob);
             
             progressBar.style.width = "100%";
             statusText.textContent = "JET 가공 성공! ✨";
@@ -185,13 +185,37 @@ document.addEventListener("DOMContentLoaded", () => {
             
             finalResultBox.classList.remove("hidden");
 
+            // 🌟 클라우드 영역 '활성화' (희미했던 영역이 밝아짐!)
+            cloudArea.style.opacity = "1";
+            cloudArea.querySelectorAll(".cloud-tile").forEach(btn => btn.style.cursor = "pointer");
+
         } catch (e) {
-            console.error("ENCODING_ERROR", e);
-            statusText.textContent = "ENGINE_HALT: 브라우저 연산 중단 발생.";
+            console.error(e);
+            statusText.textContent = "가공 실패: 리소스 재확인이 필요합니다.";
             statusText.style.color = "red";
         }
     });
 
+    // ☁️ [클라우드 전송] 하이라이트 기능 구현
+    gDriveBtn.addEventListener("click", () => {
+        if (!finalVideoBlob) return;
+        alert("구글 드라이브 업로더를 실행합니다.\n(현재 데모 버전: 수동 업로드 창이 열립니다!)");
+        window.open('https://drive.google.com/drive/my-drive', '_blank');
+    });
+
+    dropboxBtn.addEventListener("click", () => {
+        if (!finalVideoBlob) return;
+        alert("드롭박스 업로더를 실행합니다.");
+        window.open('https://www.dropbox.com/home', '_blank');
+    });
+
+    myboxBtn.addEventListener("click", () => {
+        if (!finalVideoBlob) return;
+        alert("마이박스(네이버) 업로더를 실행합니다.");
+        window.open('https://mybox.naver.com/', '_blank');
+    });
+
+    // 이벤트 리스너들
     ["dragenter", "dragover", "dragleave", "drop"].forEach(name => {
         dropZone.addEventListener(name, e => { e.preventDefault(); e.stopPropagation(); });
     });
