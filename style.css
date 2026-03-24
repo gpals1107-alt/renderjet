@@ -1,0 +1,149 @@
+/* Multi-language Selector & High-end Centering Polish */
+:root {
+    --bg-black: #08080a;
+    --neon-purple: #8f5dff;
+    --neon-green: #00ffaa;
+    --text-white: #ffffff;
+    --text-gray: #7a7c85;
+    --border-sub: rgba(255, 255, 255, 0.08);
+    --grad-pg: linear-gradient(135deg, var(--neon-purple), #1a1a1a, var(--neon-green));
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background-color: var(--bg-black);
+    color: var(--text-white);
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 🌐 언어 선택 버튼 스타일 */
+.lang-selector {
+    position: absolute;
+    top: 30px;
+    right: 40px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border-sub);
+    backdrop-filter: blur(10px);
+}
+
+.lang-selector button {
+    background: transparent;
+    border: none;
+    color: var(--text-gray);
+    font-size: 0.75rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.lang-selector button:hover { color: #fff; }
+.lang-selector button.active { color: var(--neon-purple); text-shadow: 0 0 10px rgba(143, 93, 255, 0.5); }
+.lang-selector .sep { color: #222; font-size: 0.6rem; }
+
+/* 엠비언트 배경 글로우 */
+.ambient-glow { position: absolute; width: 600px; height: 600px; filter: blur(140px); z-index: -1; opacity: 0.12; border-radius: 50%; pointer-events: none; }
+.ambient-glow.purple { top: -15%; left: -10%; background: var(--neon-purple); }
+.ambient-glow.green { bottom: -15%; right: -10%; background: var(--neon-green); }
+
+.app-wrap { width: 1080px; max-width: 95vw; position: relative; }
+.header { text-align: center; margin-bottom: 50px; position: relative; }
+
+/* 🚀 브랜드 로고 고정 스타일 */
+.brand-logo { font-size: 3.5rem; font-weight: 900; letter-spacing: -0.06em; position: relative; display: inline-flex; align-items: baseline; gap: 0; margin-bottom: 15px; }
+.brand-logo .render { color: white; background: linear-gradient(180deg, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.jet-wrap { position: relative; display: inline-block; padding-right: 20px; }
+.brand-logo .jet { display: inline-block; color: var(--neon-green); transform: skewX(-20deg) rotateX(10deg); text-shadow: 0 0 30px rgba(0, 255, 170, 0.6); animation: jetPulse 1.5s infinite ease-in-out; }
+
+/* 속도 라인 & 잔상 효과 */
+.jet-trail, .jet-trail-2 { position: absolute; top: 0; left: 0; color: var(--neon-green); transform: skewX(-20deg); opacity: 0; z-index: -1; pointer-events: none; }
+.jet-trail { animation: trailMove 1.5s infinite ease-out; opacity: 0.2; }
+.jet-trail-2 { animation: trailMove 1.5s infinite ease-out 0.3s; opacity: 0.1; }
+@keyframes trailMove { 0% { transform: skewX(-20deg) translate(0,0); opacity: 0.3; } 100% { transform: skewX(-20deg) translate(40px,-5px); opacity: 0; } }
+
+.speed-lines { position: absolute; right: -60px; top: 50%; transform: translateY(-50%); width: 60px; height: 40px; }
+.speed-lines span { position: absolute; height: 2px; background: linear-gradient(90deg, var(--neon-green), transparent); border-radius: 1px; opacity: 0.4; animation: lineFly 0.5s infinite linear; }
+.speed-lines span:nth-child(1) { top: 10%; width: 50px; animation-duration: 0.3s; }
+.speed-lines span:nth-child(2) { top: 50%; width: 40px; animation-duration: 0.45s; }
+.speed-lines span:nth-child(3) { top: 80%; width: 60px; animation-duration: 0.25s; }
+@keyframes lineFly { 0% { transform: translateX(-40px); opacity: 0; } 50% { opacity: 0.6; } 100% { transform: translateX(60px); opacity: 0; } }
+
+.desc { font-size: 0.8rem; font-weight: 700; color: var(--text-gray); letter-spacing: 0.25em; text-transform: uppercase; margin-top: 10px; }
+
+/* 🌓 듀얼 패널 기반 디자인 - 안정화 튜닝 */
+.dual-layout { display: flex; gap: 30px; min-height: 560px; }
+.panel { flex: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--border-sub); border-radius: 32px; backdrop-filter: blur(50px); -webkit-backdrop-filter: blur(50px); padding: 50px; display: flex; flex-direction: column; box-shadow: 0 40px 120px rgba(0,0,0,0.6); }
+
+/* 좌측 파일 정보 영역 */
+.side-left { border: 2px dashed rgba(255,255,255,0.05); cursor: pointer; transition: all 0.3s; justify-content: center; }
+.panel-inner { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 35px; }
+.icon-orb { width: 80px; height: 80px; background: #000; border-radius: 26px; display: flex; justify-content: center; align-items: center; color: var(--neon-purple); border: 1.5px solid var(--neon-purple); box-shadow: 0 0 50px rgba(143,93,255,0.1); }
+.source-filename { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; max-width: 100%; word-break: break-all; }
+.source-status { font-size: 0.95rem; color: var(--text-gray); }
+.side-left:hover { border-color: var(--neon-purple); background: rgba(143,93,255,0.03); transform: translateY(-5px); }
+
+.select-btn { background: var(--neon-purple); border: none; padding: 16px 35px; border-radius: 12px; font-weight: 900; font-size: 1rem; color: #fff; cursor: pointer; transition: all 0.2s; box-shadow: 0 10px 25px rgba(110, 50, 255, 0.2); }
+.select-btn:hover { box-shadow: 0 15px 35px rgba(143,93,255,0.4); transform: translateY(-2px); }
+
+.secure-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #555; border: 1px solid #222; padding: 6px 16px; border-radius: 8px; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px; }
+
+/* 우측 설정 영역 */
+.side-right { background: rgba(0,0,0,0.4); justify-content: space-between; gap: 30px; }
+.guide-box { height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-gray); font-weight: 600; font-size: 1.1rem; letter-spacing: 0.1em; opacity: 0.5; text-align: center; }
+
+.tab-menu { display: flex; background: #000; padding: 5px; border-radius: 14px; margin-bottom: 25px; border: 1px solid #222; }
+.tab-menu button { flex: 1; background: transparent; border: none; color: #444; font-size: 0.8rem; font-weight: 900; padding: 12px; cursor: pointer; transition: all 0.2s; }
+.tab-menu button.active { background: #fff; color: #000; border-radius: 10px; }
+
+.label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.label-row label { font-size: 0.8rem; font-weight: 800; color: #555; text-transform: uppercase; letter-spacing: 0.1em; }
+.badge-v2 { background: var(--neon-green); color: #000; font-weight: 900; padding: 4px 14px; border-radius: 6px; box-shadow: 0 0 25px rgba(0,255,170,0.3); }
+
+.neon-slider { -webkit-appearance: none; width: 100%; height: 2px; background: #222; margin-top: 10px; outline: none; }
+.neon-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: #fff; border: 5px solid var(--neon-purple); border-radius: 50%; cursor: pointer; box-shadow: 0 0 20px rgba(123,77,255,0.4); }
+
+.q-desc { font-size: 0.9rem; color: var(--text-gray); margin-top: 20px; line-height: 1.5; }
+
+/* 비교 뷰 에디션 */
+.estimate-preview-v2 { background: #000; padding: 35px; border-radius: 28px; border: 1px solid var(--border-sub); margin-top: 10px; }
+.estimate-row { display: flex; align-items: center; justify-content: space-between; }
+.estimate-col { display: flex; flex-direction: column; gap: 8px; flex: 1; text-align: center; }
+.estimate-sep { width: 1.5px; height: 40px; background: #1a1a1a; margin: 0 20px; }
+.e-label { font-size: 0.75rem; color: #444; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; }
+.e-val { font-family: 'JetBrains Mono', monospace; font-size: 1.8rem; font-weight: 700; color: #fff; }
+.highlight .e-val { color: var(--neon-green); text-shadow: 0 0 25px rgba(0,255,170,0.5); }
+
+.action-btn-neon { width: 100%; height: 70px; background: var(--grad-pg); border: none; color: white; border-radius: 18px; font-weight: 900; font-size: 1.3rem; cursor: pointer; box-shadow: 0 20px 60px rgba(0,0,0,0.4); transition: all 0.3s; letter-spacing: 0.1em; }
+.speed-btn:hover { background: linear-gradient(135deg, var(--neon-purple), var(--neon-green)); transform: scale(1.02); box-shadow: 0 30px 80px rgba(123,77,255,0.3); }
+
+/* 기타 공통 */
+.hidden { display: none !important; }
+.tile-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 24px; }
+.cloud-tile { height: 48px; background: #111; border: 1px solid var(--border-sub); color: #444; border-radius: 12px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: all 0.2s; }
+.cloud-tile:hover { background: #151515; color: #fff; border-color: #555; }
+.cloud-tile.success { border-color: var(--neon-green); color: var(--neon-green); background: rgba(0,255,170,0.05); }
+
+.link-field-v3 { background: #000; padding: 6px; border-radius: 14px; border: 1px solid var(--border-sub); display: flex; margin-top: 30px; }
+.link-field-v3 input { flex: 1; border: none; background: transparent; color: var(--neon-green); font-family: 'JetBrains Mono', monospace; font-size: 1rem; padding: 0 15px; outline: none; }
+.link-field-v3 button { background: #111; color: #fff; padding: 10px 25px; border-radius: 10px; border: 1px solid #222; font-weight: 900; font-size: 0.8rem; cursor: pointer; }
+
+.neon-bar-container { height: 6px; background: #111; border-radius: 3px; overflow: hidden; margin: 30px 0; }
+.neon-bar-fill { height: 100%; width: 0%; background: var(--grad-pg); box-shadow: 0 0 20px var(--neon-purple); }
+.status-title { font-size: 1.4rem; font-weight: 800; text-align: center; }
+.status-log { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: #555; text-align: center; }
+.cloud-export-v2 label { font-size: 0.75rem; font-weight: 900; color: #333; margin-top: 40px; display: block; text-align: center; letter-spacing: 0.1em; }
+@keyframes jetPulse { 0%, 100% { transform: skewX(-22deg) scale(1); } 50% { transform: skewX(-22deg) scale(1.02); } }
