@@ -204,6 +204,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.target.files.length > 0) handleFile(e.target.files[0]);
     });
 
+    // 🐛 게이지 움직임 감지 센서 복구!
+    compressionSlider.addEventListener("input", updateEstimate);
+
     // 언어 및 초기화
     btnKo.addEventListener("click", () => setLanguage("ko"));
     btnEn.addEventListener("click", () => setLanguage("en"));
