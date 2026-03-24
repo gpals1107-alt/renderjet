@@ -140,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (dropboxBtn) dropboxBtn.addEventListener("click", () => { if (finalVideoBlob) window.open('https://www.dropbox.com/home', '_blank'); });
     if (myboxBtn) myboxBtn.addEventListener("click", () => { if (finalVideoBlob) window.open('https://mybox.naver.com/', '_blank'); });
 
-    // 드래그앤드롭 전체 윈도우 지원
+    // 1. 드래그 오버/바탕 (시각적 피드백)
     window.addEventListener("dragover", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -149,14 +149,16 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("drop", (e) => {
         e.preventDefault();
         e.stopPropagation();
+        // 화면 전역에서 처리
         const files = e.dataTransfer.files;
         if (files && files.length > 0) handleFile(files[0]);
     }, false);
 
-    // 판넬 디자인 피드백
+    // 2. 판넬 내부 (Drop Zone 액션 및 시각 효과 유지)
     ["dragenter", "dragover"].forEach(name => {
         dropZone.addEventListener(name, (e) => {
-            e.preventDefault(); e.stopPropagation();
+            e.preventDefault(); 
+            e.stopPropagation();
             dropZone.style.background = "rgba(168, 85, 247, 0.05)";
             dropZone.style.borderColor = "var(--neon-purple)";
         });
@@ -164,9 +166,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     ["dragleave", "drop"].forEach(name => {
         dropZone.addEventListener(name, (e) => {
-            e.preventDefault(); e.stopPropagation();
+            e.preventDefault(); 
+            e.stopPropagation();
             dropZone.style.background = "transparent";
             dropZone.style.borderColor = "rgba(255, 255, 255, 0.1)";
+            
+            // 🐛 여기에 파일 처리 기능이 누락되어 있었습니다! 🐛
+            if (name === "drop") {
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) {
+                    handleFile(files[0]);
+                }
+            }
         });
     });
 
